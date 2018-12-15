@@ -159,7 +159,7 @@ func makeValueProxy(L *lua.State, v reflect.Value, proxyMT string) {
 	proxymu.Lock()
 	id := proxyIdCounter
 	proxyIdCounter++
-	proxyMap[id] = &valueProxy{ v: v, t: v.Type() }
+	proxyMap[id] = &valueProxy{v: v, t: v.Type()}
 	proxymu.Unlock()
 
 	L.Pop(1)
