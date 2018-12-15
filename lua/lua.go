@@ -9,8 +9,10 @@ package lua
 
 #cgo CFLAGS: -I ${SRCDIR}/lua
 #cgo LDFLAGS: -llua
+
 #cgo luaa LDFLAGS: -llua -lm -ldl
-#cgo linux,!llua,!luaa LDFLAGS: -L${SRCDIR}/lua -llua -lm -ldl
+#cgo windows LDFLAGS: -static -L${SRCDIR}/lua -llua.win
+#cgo linux,!llua,!luaa LDFLAGS: -static -L${SRCDIR}/lua -Wl,-Bstatic -llua.linux -Wl.-Bdynamic -lm -ldl
 #cgo darwin,!luaa LDFLAGS: -lluas
 #cgo freebsd,!luaa LDFLAGS: -llua
 
@@ -77,9 +79,9 @@ func (L *State) register(f interface{}) uint {
 		index = uint(len(L.registry))
 		//reallocate backing array if necessary
 		if index+1 > uint(cap(L.registry)) {
-			newcap := cap(L.registry)*2
+			newcap := cap(L.registry) * 2
 			if index+1 > uint(newcap) {
-				newcap = int(index+1)
+				newcap = int(index + 1)
 			}
 			newSlice := make([]interface{}, index, newcap)
 			copy(newSlice, L.registry)
@@ -187,16 +189,16 @@ func (L *State) pcall(nargs, nresults, errfunc int) int {
 
 func (L *State) callEx(nargs, nresults int, catch bool, errHandler LuaGoErrHandler) (err error) {
 	if catch {
-		defer func()  {
+		defer func() {
 			if pan := recover(); pan != nil {
 				if _, ok := pan.(error); ok {
 					err = pan.(error)
 				}
-				if (errHandler != nil) {
-					errHandler(L, pan);
+				if errHandler != nil {
+					errHandler(L, pan)
 				}
 			}
-		}();
+		}()
 
 	}
 
@@ -220,7 +222,7 @@ func (L *State) Call(nargs, nresults int) (err error) {
 	return L.CallHandle(nargs, nresults, nil)
 }
 
-func (L * State) CallHandle(nargs, nresults int, errHandler LuaGoErrHandler) (err error) {
+func (L *State) CallHandle(nargs, nresults int, errHandler LuaGoErrHandler) (err error) {
 	return L.callEx(nargs, nresults, true, errHandler)
 }
 
