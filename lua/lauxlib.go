@@ -6,7 +6,9 @@ package lua
 //#include <stdlib.h>
 //#include "golua.h"
 import "C"
-import "unsafe"
+import (
+	"unsafe"
+)
 
 type LuaError struct {
 	code       int
@@ -101,11 +103,17 @@ func (L *State) DoFile(filename string) error {
 
 // Executes the string, returns nil for no errors or the lua error string on failure
 func (L *State) DoString(str string) error {
+	return L.DoStringHandle(str, nil);
+}
+
+func (L *State) DoStringHandle(str string, errHandler LuaGoErrHandler) error {
 	if r := L.LoadString(str); r != 0 {
 		return &LuaError{r, L.ToString(-1), L.StackTrace()}
 	}
-	return L.Call(0, LUA_MULTRET)
+	return L.CallHandle(0, LUA_MULTRET, errHandler)
 }
+
+
 
 // Like DoString but panics on error
 func (L *State) MustDoString(str string) {
@@ -146,7 +154,7 @@ func (L *State) GSub(s string, p string, r string) string {
 func (L *State) LoadFile(filename string) int {
 	Cfilename := C.CString(filename)
 	defer C.free(unsafe.Pointer(Cfilename))
-	return int(C.luaL_loadfile(L.s, Cfilename))
+	return int(C.luaL_loadfilex(L.s, Cfilename, nil))
 }
 
 // luaL_loadstring

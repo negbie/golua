@@ -1,7 +1,7 @@
 Go Bindings for the lua C API
 =========================
 
-[![Build Status](https://travis-ci.org/aarzilli/golua.svg?branch=master)](https://travis-ci.org/aarzilli/golua)
+[![Build Status](https://travis-ci.org/aarzilli/golua.svg?branch=lua5.3)](https://travis-ci.org/aarzilli/golua)
 
 Simplest way to install:
 
@@ -36,7 +36,7 @@ Lua's Virtual Machine is stack based, you can call lua functions like this:
 
 ```go
 // push "print" function on the stack
-L.GetField(lua.LUA_GLOBALSINDEX, "print")
+L.GetGlobal("print")
 // push the string "Hello World!" on the stack
 L.PushString("Hello World!")
 // call print with one argument, expecting no results
@@ -78,11 +78,8 @@ ON ERROR HANDLING
 Lua's exceptions are incompatible with Go, golua works around this incompatibility by setting up protected execution environments in `lua.State.DoString`, `lua.State.DoFile`  and lua.State.Call and turning every exception into a Go panic.
 
 This means that:
-
 1. In general you can't do any exception handling from Lua, `pcall` and `xpcall` are renamed to `unsafe_pcall` and `unsafe_xpcall`. They are only safe to be called from Lua code that never calls back to Go. Use at your own risk.
-
 2. The call to lua.State.Error, present in previous versions of this library, has been removed as it is nonsensical
-
 3. Method calls on a newly created `lua.State` happen in an unprotected environment, if Lua throws an exception as a result your program will be terminated. If this is undesirable perform your initialization like this:
 
 ```go
@@ -105,20 +102,7 @@ ON THREADS AND COROUTINES
 ODDS AND ENDS
 ---------------------
 
-* Support for lua 5.2 is in the lua5.2 branch, this branch only supports lua5.1.
-* Support for lua 5.3 is in the lua5.3 branch.
 * Compiling from source yields only a static link library (liblua.a), you can either produce the dynamic link library on your own or use the `luaa` build tag.
-
-LUAJIT
----------------------
-
-To link with [luajit-2.0.x](http://luajit.org/luajit.html), you can use CGO_CFLAGS and CGO_LDFLAGS environment variables
-
-```
-$ CGO_CFLAGS=`pkg-config luajit --cflags`
-$ CGO_LDFLAGS=`pkg-config luajit --libs-only-L`
-$ go get -f -u -tags luajit github.com/aarzilli/golua/lua
-```
 
 CONTRIBUTORS
 ---------------------
@@ -136,7 +120,6 @@ CONTRIBUTORS
 * HongZhen Peng
 * Admin36
 * Pierre Neidhardt (@Ambrevar)
-* HuangWei (@huangwei1024)
 
 SEE ALSO
 ---------------------

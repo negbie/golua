@@ -173,7 +173,7 @@ func TestLikeBasic(t *testing.T) {
 		return 0
 	}
 
-	L.GetField(LUA_GLOBALSINDEX, "print")
+	L.GetGlobal("print")
 	L.PushString("Hello World!")
 	if err := L.Call(1, 0); err != nil {
 		t.Fatalf("Call to print returned error")
@@ -349,6 +349,19 @@ func TestStackTrace(t *testing.T) {
 
 	if len(le.StackTrace()) != 6 {
 		t.Fatalf("Wrong size of stack trace (%v)\n", le.StackTrace())
+	}
+}
+
+func TestIssue8(t *testing.T) {
+	state := NewState()
+	state.OpenBase()
+	state.OpenMath()
+	defer state.Close()
+
+	state.LoadString("return math.sqrt(4)")
+	err := state.Call(0, 1)
+	if err != nil {
+		t.Fatal(err)
 	}
 }
 

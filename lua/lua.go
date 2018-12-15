@@ -6,14 +6,14 @@
 package lua
 
 /*
+
 #cgo CFLAGS: -I ${SRCDIR}/lua
-#cgo llua LDFLAGS: -llua
+#cgo LDFLAGS: -llua
 #cgo luaa LDFLAGS: -llua -lm -ldl
-#cgo luajit LDFLAGS: -lluajit-5.1
-#cgo linux,!llua,!luaa,!luajit LDFLAGS: -llua5.1
-#cgo darwin,!luaa,!luajit pkg-config: lua5.1
-#cgo freebsd,!luaa,!luajit LDFLAGS: -llua-5.1
-#cgo windows,!llua,!luajit LDFLAGS: -L${SRCDIR} -llua -lmingwex -lmingw32
+#cgo linux,!llua,!luaa LDFLAGS: -L${SRCDIR}/lua -llua -lm -ldl
+#cgo darwin,!luaa LDFLAGS: -lluas
+#cgo freebsd,!luaa LDFLAGS: -llua
+
 
 #include <lua.h>
 #include <stdlib.h>
@@ -182,19 +182,22 @@ func (L *State) AtPanic(panicf LuaGoFunction) (oldpanicf LuaGoFunction) {
 }
 
 func (L *State) pcall(nargs, nresults, errfunc int) int {
-	return int(C.lua_pcall(L.s, C.int(nargs), C.int(nresults), C.int(errfunc)))
+	return int(C.lua_pcallk(L.s, C.int(nargs), C.int(nresults), C.int(errfunc), 0, nil))
 }
 
-func (L *State) callEx(nargs, nresults int, catch bool) (err error) {
+func (L *State) callEx(nargs, nresults int, catch bool, errHandler LuaGoErrHandler) (err error) {
 	if catch {
-		defer func() {
-			if err2 := recover(); err2 != nil {
-				if _, ok := err2.(error); ok {
-					err = err2.(error)
+		defer func()  {
+			if pan := recover(); pan != nil {
+				if _, ok := pan.(error); ok {
+					err = pan.(error)
 				}
-				return
+				if (errHandler != nil) {
+					errHandler(L, pan);
+				}
 			}
-		}()
+		}();
+
 	}
 
 	L.GetGlobal(C.GOLUA_DEFAULT_MSGHANDLER)
@@ -214,12 +217,16 @@ func (L *State) callEx(nargs, nresults int, catch bool) (err error) {
 
 // lua_call
 func (L *State) Call(nargs, nresults int) (err error) {
-	return L.callEx(nargs, nresults, true)
+	return L.CallHandle(nargs, nresults, nil)
+}
+
+func (L * State) CallHandle(nargs, nresults int, errHandler LuaGoErrHandler) (err error) {
+	return L.callEx(nargs, nresults, true, errHandler)
 }
 
 // Like lua_call but panics on errors
 func (L *State) MustCall(nargs, nresults int) {
-	L.callEx(nargs, nresults, false)
+	L.callEx(nargs, nresults, false, nil)
 }
 
 // lua_checkstack
@@ -245,14 +252,11 @@ func (L *State) CreateTable(narr int, nrec int) {
 
 // lua_equal
 func (L *State) Equal(index1, index2 int) bool {
-	return C.lua_equal(L.s, C.int(index1), C.int(index2)) == 1
+	return C.lua_compare(L.s, C.int(index1), C.int(index2), C.LUA_OPEQ) == 1
 }
 
 // lua_gc
 func (L *State) GC(what, data int) int { return int(C.lua_gc(L.s, C.int(what), C.int(data))) }
-
-// lua_getfenv
-func (L *State) GetfEnv(index int) { C.lua_getfenv(L.s, C.int(index)) }
 
 // lua_getfield
 func (L *State) GetField(index int, k string) {
@@ -262,7 +266,11 @@ func (L *State) GetField(index int, k string) {
 }
 
 // Pushes on the stack the value of a global variable (lua_getglobal)
-func (L *State) GetGlobal(name string) { L.GetField(LUA_GLOBALSINDEX, name) }
+func (L *State) GetGlobal(name string) {
+	Ck := C.CString(name)
+	defer C.free(unsafe.Pointer(Ck))
+	C.lua_getglobal(L.s, Ck)
+}
 
 // lua_getmetatable
 func (L *State) GetMetaTable(index int) bool {
@@ -276,7 +284,7 @@ func (L *State) GetTable(index int) { C.lua_gettable(L.s, C.int(index)) }
 func (L *State) GetTop() int { return int(C.lua_gettop(L.s)) }
 
 // lua_insert
-func (L *State) Insert(index int) { C.lua_insert(L.s, C.int(index)) }
+func (L *State) Insert(index int) { C.lua_rotate(L.s, C.int(index), 1) }
 
 // Returns true if lua_type == LUA_TBOOLEAN
 func (L *State) IsBoolean(index int) bool {
@@ -333,7 +341,7 @@ func (L *State) IsUserdata(index int) bool { return C.lua_isuserdata(L.s, C.int(
 
 // lua_lessthan
 func (L *State) LessThan(index1, index2 int) bool {
-	return C.lua_lessthan(L.s, C.int(index1), C.int(index2)) == 1
+	return C.lua_compare(L.s, C.int(index1), C.int(index2), C.LUA_OPLT) == 1
 }
 
 // Creates a new lua interpreter state with the given allocation function
@@ -363,7 +371,7 @@ func (L *State) Next(index int) int {
 
 // lua_objlen
 func (L *State) ObjLen(index int) uint {
-	return uint(C.lua_objlen(L.s, C.int(index)))
+	return uint(C.lua_rawlen(L.s, C.int(index)))
 }
 
 // lua_pop
@@ -432,7 +440,7 @@ func (L *State) RawGet(index int) {
 
 // lua_rawgeti
 func (L *State) RawGeti(index int, n int) {
-	C.lua_rawgeti(L.s, C.int(index), C.int(n))
+	C.lua_rawgeti(L.s, C.int(index), C.lua_Integer(n))
 }
 
 // lua_rawset
@@ -442,7 +450,7 @@ func (L *State) RawSet(index int) {
 
 // lua_rawseti
 func (L *State) RawSeti(index int, n int) {
-	C.lua_rawseti(L.s, C.int(index), C.int(n))
+	C.lua_rawseti(L.s, C.int(index), C.lua_Integer(n))
 }
 
 // Registers a Go function as a global variable
@@ -453,27 +461,26 @@ func (L *State) Register(name string, f LuaGoFunction) {
 
 // lua_remove
 func (L *State) Remove(index int) {
-	C.lua_remove(L.s, C.int(index))
+	C.lua_rotate(L.s, C.int(index), -1)
+	//C.lua_pop(L, 1)
+	C.lua_settop(L.s, C.int(-2))
 }
 
 // lua_replace
 func (L *State) Replace(index int) {
-	C.lua_replace(L.s, C.int(index))
+	C.lua_copy(L.s, -1, C.int(index))
+	//C.lua_pop(L.s, 1)
+	C.lua_settop(L.s, -2)
 }
 
 // lua_resume
 func (L *State) Resume(narg int) int {
-	return int(C.lua_resume(L.s, C.int(narg)))
+	return int(C.lua_resume(L.s, nil, C.int(narg)))
 }
 
 // lua_setallocf
 func (L *State) SetAllocf(f Alloc) {
 	C.clua_setallocf(L.s, unsafe.Pointer(&f))
-}
-
-// lua_setfenv
-func (L *State) SetfEnv(index int) {
-	C.lua_setfenv(L.s, C.int(index))
 }
 
 // lua_setfield
@@ -487,7 +494,7 @@ func (L *State) SetField(index int, k string) {
 func (L *State) SetGlobal(name string) {
 	Cname := C.CString(name)
 	defer C.free(unsafe.Pointer(Cname))
-	C.lua_setfield(L.s, C.int(LUA_GLOBALSINDEX), Cname)
+	C.lua_setglobal(L.s, Cname)
 }
 
 // lua_setmetatable
@@ -554,12 +561,12 @@ func (L *State) ToBytes(index int) []byte {
 
 // lua_tointeger
 func (L *State) ToInteger(index int) int {
-	return int(C.lua_tointeger(L.s, C.int(index)))
+	return int(C.lua_tointegerx(L.s, C.int(index), nil))
 }
 
 // lua_tonumber
 func (L *State) ToNumber(index int) float64 {
-	return float64(C.lua_tonumber(L.s, C.int(index)))
+	return float64(C.lua_tonumberx(L.s, C.int(index), nil))
 }
 
 // lua_topointer
@@ -595,7 +602,7 @@ func XMove(from *State, to *State, n int) {
 
 // lua_yield
 func (L *State) Yield(nresults int) int {
-	return int(C.lua_yield(L.s, C.int(nresults)))
+	return int(C.lua_yieldk(L.s, C.int(nresults), 0, nil))
 }
 
 // Restricted library opens
@@ -633,6 +640,21 @@ func (L *State) OpenTable() {
 // Calls luaopen_os
 func (L *State) OpenOS() {
 	C.clua_openos(L.s)
+}
+
+// Calls luaopen_debug
+func (L *State) OpenDebug() {
+	C.clua_opendebug(L.s)
+}
+
+// Calls luaopen_bit32
+func (L *State) OpenBit32() {
+	C.clua_openbit32(L.s)
+}
+
+// Calls luaopen_coroutine
+func (L *State) OpenCoroutine() {
+	C.clua_opencoroutine(L.s)
 }
 
 // Sets the maximum number of operations to execute at instrNumber, after this the execution ends
