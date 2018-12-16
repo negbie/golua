@@ -12,7 +12,7 @@ package lua
 
 #cgo luaa LDFLAGS: -llua -lm -ldl
 #cgo windows LDFLAGS: -static -L${SRCDIR}/lua -llua.win
-#cgo linux,!llua,!luaa LDFLAGS: -static -L${SRCDIR}/lua -Wl,-Bstatic -llua.linux -Wl.-Bdynamic -lm -ldl
+#cgo linux,!llua,!luaa LDFLAGS: -static -L${SRCDIR}/lua -Wl,-Bstatic -llua.linux -Wl,-Bdynamic -lm -ldl
 #cgo darwin,!luaa LDFLAGS: -lluas
 #cgo freebsd,!luaa LDFLAGS: -llua
 
