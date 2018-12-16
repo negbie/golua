@@ -2,7 +2,6 @@ package lua
 
 /*
 #cgo CFLAGS: -I ${SRCDIR}/lua
-#cgo LDFLAGS: -L${SRCDIR}/lua -llua
 
 #include <lua.h>
 #include <lualib.h>
@@ -22,7 +21,7 @@ type Alloc func(ptr unsafe.Pointer, osize uint, nsize uint) unsafe.Pointer
 // This is the type of go function that can be registered as lua functions
 type LuaGoFunction func(L *State) int
 
-type LuaGoErrHandler func(L * State, pan interface{})
+type LuaGoErrHandler func(L *State, pan interface{})
 
 // Wrapper to keep cgo from complaining about incomplete ptr type
 //export State
