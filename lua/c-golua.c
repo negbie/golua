@@ -13,6 +13,8 @@
 static const char GoStateRegistryKey = 'k'; //golua registry key
 static const char PanicFIDRegistryKey = 'k';
 
+static int panic_msghandler(lua_State *L);
+
 /* taken from lua5.2 source */
 void *testudata(lua_State *L, int ud, const char *tname)
 {
@@ -30,6 +32,10 @@ void *testudata(lua_State *L, int ud, const char *tname)
 	}
 	return NULL;  /* value is not a userdata with a metatable */
 }
+
+
+
+
 
 int clua_isgofunction(lua_State *L, int n)
 {
@@ -133,12 +139,12 @@ int default_panicf(lua_State *L)
 {
 	const char *s = lua_tostring(L, -1);
 	printf("Lua unprotected panic: %s\n", s);
-	abort();
+	abort(); // TODO ahha...abort
 }
 
 void clua_setgostate(lua_State* L, size_t gostateindex)
 {
-	lua_atpanic(L, default_panicf);
+	lua_atpanic(L, panic_msghandler);
 	lua_pushlightuserdata(L,(void*)&GoStateRegistryKey);
 	lua_pushlightuserdata(L, (void*)gostateindex);
 	//set into registry table
@@ -207,13 +213,6 @@ int interface_newindex_callback(lua_State *L)
 	{
 		return r;
 	}
-}
-
-int panic_msghandler(lua_State *L)
-{
-	size_t gostateindex = clua_getgostate(L);
-	go_panic_msghandler(gostateindex, (char *)lua_tolstring(L, -1, NULL));
-	return 0;
 }
 
 void clua_hide_pcall(lua_State *L)
@@ -404,4 +403,31 @@ void clua_setexecutionlimit(lua_State* L, int n)
 	lua_sethook(L, &clua_hook_function, LUA_MASKCOUNT, n);
 }
 
+static int panic_msghandler(lua_State *L)
+{
+	size_t gostateindex = clua_getgostate(L);
+	go_panic_msghandler(gostateindex, (char *)lua_tolstring(L, -1, NULL));
+	return 0;
+}
 
+static int clua_dump_callback(lua_State *L, const void* b, size_t size, void* B) {
+    (void)L;
+    if (size == 0 || B == NULL) {
+        return 1;
+    }
+    luaL_addlstring((luaL_Buffer*) B, (const char *)b, size);
+    return 0;
+}
+
+int clua_dump (lua_State *L) {
+    luaL_Buffer b;
+    int lua_dump_result;
+    luaL_checktype(L, 1, LUA_TFUNCTION);
+    lua_settop(L, 1);
+    luaL_buffinit(L,&b);
+    lua_dump_result = lua_dump(L, clua_dump_callback, &b, 0);
+    if (lua_dump_result == 0) {
+        luaL_pushresult(&b);
+    }
+    return lua_dump_result;
+}

@@ -35,3 +35,4 @@ void clua_setexecutionlimit(lua_State* L, int n);
 int clua_isgofunction(lua_State *L, int n);
 int clua_isgostruct(lua_State *L, int n);
 
+int clua_dump(lua_State* L);
