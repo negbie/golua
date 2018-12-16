@@ -12,6 +12,7 @@ package lua
 #cgo linux LDFLAGS: -L${SRCDIR}/lua -Wl,-Bstatic -llua.linux -Wl,-Bdynamic -lm -ldl
 
 #include <lua.h>
+#include <lauxlib.h>
 #include <stdlib.h>
 
 #include "golua.h"
@@ -702,4 +703,24 @@ func (L *State) Dump() error {
 		return nil
 	}
 	return &LuaError{code: rcode}
+}
+
+func (L *State) LoadBuffer(chunk []byte, name string, mode string) error {
+	if chunk == nil {
+		return fmt.Errorf("chunk is null")
+	}
+	var cmode *C.char
+	var cname = C.CString(name)
+	defer C.free(unsafe.Pointer(cname))
+	if len(mode) > 0 {
+		cmode = C.CString(mode)
+		defer C.free(unsafe.Pointer(cmode))
+	}
+	var cchunk = (*C.char)(unsafe.Pointer(&chunk[0]))
+	var cchunklen = C.size_t(len(chunk))
+	var rcode = C.luaL_loadbufferx(L.s, cchunk, cchunklen, cname, cmode)
+	if rcode != 0 {
+		return &LuaError{code: int(rcode)}
+	}
+	return nil
 }
