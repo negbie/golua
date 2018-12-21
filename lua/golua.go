@@ -39,6 +39,10 @@ type State struct {
 	freeIndices []uint
 
 	ErrHandler LuaGoErrHandler
+
+	Data map[string]interface{}
+
+	Notice *Interrupt
 }
 
 type Interrupt struct {
