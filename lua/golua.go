@@ -37,6 +37,14 @@ type State struct {
 
 	// Freelist for funcs indices, to allow for freeing
 	freeIndices []uint
+
+	ErrHandler LuaGoErrHandler
+}
+
+type Interrupt struct {
+	Code int
+	Msg  string
+	Data interface{}
 }
 
 var goStates map[uintptr]*State

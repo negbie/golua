@@ -260,7 +260,7 @@ func copyStructToTable(L *lua.State, v reflect.Value, visited visitor) {
 func callGoFunction(L *lua.State, v reflect.Value, args []reflect.Value) []reflect.Value {
 	defer func() {
 		if x := recover(); x != nil {
-			L.RaiseError(fmt.Sprintf("error %s", x))
+			L.RaiseError(x)
 		}
 	}()
 	results := v.Call(args)

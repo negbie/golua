@@ -31,7 +31,13 @@ type LuaStackEntry struct {
 }
 
 func newState(L *C.lua_State) *State {
-	newstate := &State{L, 0, make([]interface{}, 0, 8), make([]uint, 0, 8)}
+	newstate := &State{
+		s:           L,
+		Index:       0,
+		registry:    make([]interface{}, 0, 8),
+		freeIndices: make([]uint, 0, 8),
+		ErrHandler:  nil,
+	}
 	registerGoState(newstate)
 	C.clua_setgostate(L, C.size_t(newstate.Index))
 	C.clua_initstate(L)
@@ -183,7 +189,13 @@ func (L *State) pcall(nargs, nresults, errfunc int) int {
 }
 
 func (L *State) callEx(nargs, nresults int, catch bool, errHandler LuaGoErrHandler) (err error) {
+
 	if catch {
+
+		if errHandler == nil {
+			errHandler = L.ErrHandler
+		}
+
 		defer func() {
 			if pan := recover(); pan != nil {
 				if _, ok := pan.(error); ok {
@@ -358,7 +370,8 @@ func (L *State) NewThread() *State {
 	//TODO: should have same lists as parent
 	//		but may complicate gc
 	s := C.lua_newthread(L.s)
-	return &State{s, 0, nil, nil}
+	return &State{
+		s: s, Index: 0, registry: nil, freeIndices: nil, ErrHandler: nil}
 }
 
 // lua_next
@@ -684,13 +697,23 @@ func (L *State) StackTrace() []LuaStackEntry {
 	return r
 }
 
-func (L *State) RaiseError(msg string) {
+func (L *State) RaiseError(err interface{}) {
+
+	if err == nil {
+		err = ""
+	} else {
+		var interrupt, ok = err.(*Interrupt)
+		if ok {
+			panic(interrupt)
+		}
+	}
+
 	st := L.StackTrace()
 	prefix := ""
 	if len(st) >= 1 {
 		prefix = fmt.Sprintf("%s:%d: ", st[1].ShortSource, st[1].CurrentLine)
 	}
-	panic(&LuaError{0, prefix + msg, st})
+	panic(&LuaError{0, fmt.Sprintf("%s%v", prefix, err), st})
 }
 
 func (L *State) NewError(msg string) *LuaError {
