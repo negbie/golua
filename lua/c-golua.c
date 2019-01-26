@@ -139,7 +139,7 @@ int default_panicf(lua_State *L)
 {
 	const char *s = lua_tostring(L, -1);
 	printf("Lua unprotected panic: %s\n", s);
-	abort(); // TODO ahha...abort
+	abort(); // TODO abort???
 }
 
 void clua_setgostate(lua_State* L, size_t gostateindex)
