@@ -7,6 +7,7 @@ package lua
 
 */
 import "C"
+import "strings"
 
 type LuaValType int
 
@@ -66,3 +67,24 @@ const (
 	LUA_DBLIBNAME     = C.LUA_DBLIBNAME
 	LUA_LOADLIBNAME   = C.LUA_LOADLIBNAME
 )
+
+var _lua_version_only_number string
+var _lua_version_only_number_without_dot string
+
+func GetVersionNumber() string {
+	if len(_lua_version_only_number) == 0 {
+		var v = C.LUA_VERSION
+		v = strings.Replace(v, "Lua", "", -1)
+		v = strings.Replace(v, " ", "", -1)
+		_lua_version_only_number = v
+		_lua_version_only_number_without_dot = strings.Replace(_lua_version_only_number, ".", "", -1)
+	}
+	return _lua_version_only_number
+}
+
+func GetVersionNumberWithoutDot() string {
+	if len(_lua_version_only_number_without_dot) == 0 {
+		GetVersionNumber()
+	}
+	return _lua_version_only_number_without_dot
+}

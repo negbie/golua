@@ -40,7 +40,9 @@ type State struct {
 
 	ErrHandler LuaGoErrHandler
 
-	Data map[string]interface{}
+	mutex sync.RWMutex
+
+	data map[string]interface{}
 
 	Notice *Interrupt
 }
@@ -75,6 +77,24 @@ func getGoState(gostateindex uintptr) *State {
 	goStatesMutex.Lock()
 	defer goStatesMutex.Unlock()
 	return goStates[gostateindex]
+}
+
+func (L *State) GetData(key string) interface{} {
+	if L.data == nil {
+		return nil
+	}
+	L.mutex.RLock()
+	defer L.mutex.RUnlock()
+	return L.data[key]
+}
+
+func (L *State) SetData(key string, val interface{}) {
+	L.mutex.Lock()
+	defer L.mutex.Unlock()
+	if L.data == nil {
+		L.data = make(map[string]interface{})
+	}
+	L.data[key] = val
 }
 
 //export golua_callgofunction

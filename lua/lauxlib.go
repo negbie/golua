@@ -103,7 +103,7 @@ func (L *State) DoFile(filename string) error {
 
 // Executes the string, returns nil for no errors or the lua error string on failure
 func (L *State) DoString(str string) error {
-	return L.DoStringHandle(str, nil);
+	return L.DoStringHandle(str, nil)
 }
 
 func (L *State) DoStringHandle(str string, errHandler LuaGoErrHandler) error {
@@ -112,8 +112,6 @@ func (L *State) DoStringHandle(str string, errHandler LuaGoErrHandler) error {
 	}
 	return L.CallHandle(0, LUA_MULTRET, errHandler)
 }
-
-
 
 // Like DoString but panics on error
 func (L *State) MustDoString(str string) {
@@ -155,6 +153,13 @@ func (L *State) LoadFile(filename string) int {
 	Cfilename := C.CString(filename)
 	defer C.free(unsafe.Pointer(Cfilename))
 	return int(C.luaL_loadfilex(L.s, Cfilename, nil))
+}
+
+func (L *State) LoadFileEx(filename string) error {
+	if r := L.LoadFile(filename); r != 0 {
+		return &LuaError{r, L.ToString(-1), L.StackTrace()}
+	}
+	return nil
 }
 
 // luaL_loadstring
