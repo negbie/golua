@@ -23,6 +23,8 @@ import "unsafe"
 
 import "fmt"
 
+type POwer int
+
 type LuaStackEntry struct {
 	Name        string
 	Source      string
