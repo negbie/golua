@@ -217,6 +217,7 @@ int interface_newindex_callback(lua_State *L)
 
 void clua_hide_pcall(lua_State *L)
 {
+
 	lua_getglobal(L, "pcall");
 	lua_setglobal(L, "unsafe_pcall");
 	lua_pushnil(L);
@@ -226,6 +227,7 @@ void clua_hide_pcall(lua_State *L)
 	lua_setglobal(L, "unsafe_xpcall");
 	lua_pushnil(L);
 	lua_setglobal(L, "xpcall");
+
 }
 
 void clua_initstate(lua_State* L)
