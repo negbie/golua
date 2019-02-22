@@ -258,7 +258,10 @@ func (L *State) Close() {
 	C.lua_close(L.s)
 	unregisterGoState(L)
 	if L.closeStdout && L.stdout != nil {
-		L.stdout.Close()
+		var closer, ok = L.stdout.(io.Closer)
+		if ok {
+			closer.Close()
+		}
 	}
 }
 
@@ -770,7 +773,7 @@ func (L *State) GetDoCloseStdout() bool {
 	return L.closeStdout
 }
 
-func (L *State) SetStdout(stdout io.WriteCloser) {
+func (L *State) SetStdout(stdout io.Writer) {
 	L.stdout = stdout
 }
 
@@ -817,6 +820,6 @@ func print(L *State) int {
 	return 0
 }
 
-func (L *State) GetStdout() io.WriteCloser {
+func (L *State) GetStdout() io.Writer {
 	return L.stdout
 }
