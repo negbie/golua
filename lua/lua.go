@@ -19,11 +19,13 @@ package lua
 
 */
 import "C"
-import "unsafe"
+import (
+	"io"
+	"os"
+	"unsafe"
+)
 
 import "fmt"
-
-type POwer int
 
 type LuaStackEntry struct {
 	Name        string
@@ -39,6 +41,8 @@ func newState(L *C.lua_State) *State {
 		registry:    make([]interface{}, 0, 8),
 		freeIndices: make([]uint, 0, 8),
 		ErrHandler:  nil,
+		stdout:      os.Stdout,
+		closeStdout: false,
 	}
 	registerGoState(newstate)
 	C.clua_setgostate(L, C.size_t(newstate.Index))
@@ -186,6 +190,10 @@ func (L *State) AtPanic(panicf LuaGoFunction) (oldpanicf LuaGoFunction) {
 	return nil
 }
 
+func (L *State) call(nargs, nresults int) {
+	C.lua_callk(L.s, C.int(nargs), C.int(nresults), 0, nil)
+}
+
 func (L *State) pcall(nargs, nresults, errfunc int) int {
 	return int(C.lua_pcallk(L.s, C.int(nargs), C.int(nresults), C.int(errfunc), 0, nil))
 }
@@ -249,6 +257,9 @@ func (L *State) CheckStack(extra int) bool {
 func (L *State) Close() {
 	C.lua_close(L.s)
 	unregisterGoState(L)
+	if L.closeStdout && L.stdout != nil {
+		L.stdout.Close()
+	}
 }
 
 // lua_concat
@@ -618,10 +629,11 @@ func (L *State) Yield(nresults int) int {
 }
 
 // Restricted library opens
-
 // Calls luaopen_base
 func (L *State) OpenBase() {
 	C.clua_openbase(L.s)
+	L.PushGoFunction(print)
+	L.SetGlobal("print")
 }
 
 // Calls luaopen_io
@@ -748,4 +760,63 @@ func (L *State) LoadBuffer(chunk []byte, name string, mode string) error {
 		return &LuaError{code: int(rcode)}
 	}
 	return nil
+}
+
+func (L *State) SetDoCloseStdout(doCloseStdout bool) {
+	L.closeStdout = doCloseStdout
+}
+
+func (L *State) GetDoCloseStdout() bool {
+	return L.closeStdout
+}
+
+func (L *State) SetStdout(stdout io.WriteCloser) {
+	L.stdout = stdout
+}
+
+func print(L *State) int {
+
+	if L.stdout == nil {
+		return 0
+	}
+
+	var argcount = L.GetTop()
+	L.GetGlobal("tostring")
+	for i := 1; i <= argcount; i++ {
+		L.PushValue(-1)
+		L.PushValue(i)
+		L.call(1, 1)
+		var s = L.ToString(-1)
+		if i > 1 {
+			L.stdout.Write([]byte("\t"))
+		}
+		L.stdout.Write([]byte(s))
+		L.Pop(1)
+	}
+	L.stdout.Write([]byte("\n"))
+	/*
+		int n = lua_gettop(L);  // number of arguments
+		int i;
+		lua_getglobal(L, "tostring");
+		for (i=1; i<=n; i++) {
+			const char *s;
+			size_t l;
+			lua_pushvalue(L, -1);  // function to be called
+			lua_pushvalue(L, i);   // value to print
+			lua_call(L, 1, 1);
+			s = lua_tolstring(L, -1, &l);  // get result
+			if (s == NULL)
+			return luaL_error(L, "'tostring' must return a string to 'print'");
+			if (i>1) lua_writestring("\t", 1);
+			lua_writestring(s, l);
+			lua_pop(L, 1);  // pop result
+		}
+		lua_writeline();
+		return 0;
+	*/
+	return 0
+}
+
+func (L *State) GetStdout() io.WriteCloser {
+	return L.stdout
 }

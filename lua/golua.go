@@ -10,6 +10,7 @@ package lua
 import "C"
 
 import (
+	"io"
 	"reflect"
 	"sync"
 	"unsafe"
@@ -45,6 +46,10 @@ type State struct {
 	data map[string]interface{}
 
 	Notice *Interrupt
+
+	stdout io.WriteCloser
+
+	closeStdout bool
 }
 
 type Interrupt struct {

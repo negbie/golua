@@ -331,12 +331,44 @@ void clua_setallocf(lua_State* L, void* goallocf)
 	lua_setallocf(L,&allocwrapper,goallocf);
 }
 
+
+// for testing
+static int lua_print2 (lua_State *L) {
+  int n = lua_gettop(L);  /* number of arguments */
+  int i;
+  lua_getglobal(L, "tostring");
+  for (i=1; i<=n; i++) {
+    const char *s;
+    size_t l;
+    lua_pushvalue(L, -1);  /* function to be called */
+    lua_pushvalue(L, i);   /* value to print */
+    lua_call(L, 1, 1);
+    s = lua_tolstring(L, -1, &l);  /* get result */
+    if (s == NULL)
+      return luaL_error(L, "'tostring' must return a string to 'print'");
+    if (i>1) lua_writestring("\t", 1);
+    lua_writestring(s, l);
+    lua_pop(L, 1);  /* pop result */
+  }
+  lua_writeline();
+  return 0;
+}
+
+
 void clua_openbase(lua_State* L)
 {
 	lua_pushcfunction(L,&luaopen_base);
 	lua_pushstring(L,"");
 	lua_call(L, 1, 0);
 	clua_hide_pcall(L);
+
+    /*
+	lua_getglobal(L, "print");
+	lua_setglobal(L, "print_stdout");
+	lua_pushcfunction(L, lua_print2);
+	lua_setglobal(L, "print2");
+	*/
+
 }
 
 void clua_openio(lua_State* L)
