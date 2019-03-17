@@ -47,9 +47,9 @@ type State struct {
 
 	Notice *Interrupt
 
-	stdout io.Writer
-
-	closeStdout bool
+	stdout            io.Writer
+	closeStdout       bool
+	StdoutLineChanger string
 }
 
 type Interrupt struct {

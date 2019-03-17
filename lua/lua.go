@@ -36,13 +36,14 @@ type LuaStackEntry struct {
 
 func newState(L *C.lua_State) *State {
 	newstate := &State{
-		s:           L,
-		Index:       0,
-		registry:    make([]interface{}, 0, 8),
-		freeIndices: make([]uint, 0, 8),
-		ErrHandler:  nil,
-		stdout:      os.Stdout,
-		closeStdout: false,
+		s:                 L,
+		Index:             0,
+		registry:          make([]interface{}, 0, 8),
+		freeIndices:       make([]uint, 0, 8),
+		ErrHandler:        nil,
+		stdout:            os.Stdout,
+		closeStdout:       false,
+		StdoutLineChanger: "\n",
 	}
 	registerGoState(newstate)
 	C.clua_setgostate(L, C.size_t(newstate.Index))
@@ -637,6 +638,8 @@ func (L *State) OpenBase() {
 	C.clua_openbase(L.s)
 	L.PushGoFunction(print)
 	L.SetGlobal("print")
+	L.PushGoFunction(printex)
+	L.SetGlobal("printex")
 }
 
 // Calls luaopen_io
@@ -778,6 +781,15 @@ func (L *State) SetStdout(stdout io.Writer) {
 }
 
 func print(L *State) int {
+	if L.stdout == nil {
+		return 0
+	}
+	printex(L)
+	L.stdout.Write([]byte(L.StdoutLineChanger))
+	return 0
+}
+
+func printex(L *State) int {
 
 	if L.stdout == nil {
 		return 0
@@ -796,7 +808,8 @@ func print(L *State) int {
 		L.stdout.Write([]byte(s))
 		L.Pop(1)
 	}
-	L.stdout.Write([]byte("\n"))
+	return 0
+
 	/*
 		int n = lua_gettop(L);  // number of arguments
 		int i;
@@ -817,30 +830,6 @@ func print(L *State) int {
 		lua_writeline();
 		return 0;
 	*/
-	return 0
-}
-
-func printone(L *State) int {
-
-	if L.stdout == nil {
-		return 0
-	}
-
-	var argcount = L.GetTop()
-	L.GetGlobal("tostring")
-	for i := 1; i <= argcount; i++ {
-		L.PushValue(-1)
-		L.PushValue(i)
-		L.call(1, 1)
-		var s = L.ToString(-1)
-		if i > 1 {
-			L.stdout.Write([]byte("\t"))
-		}
-		L.stdout.Write([]byte(s))
-		L.Pop(1)
-	}
-	L.stdout.Write([]byte("\n"))
-	return 0
 }
 
 func (L *State) GetStdout() io.Writer {
