@@ -820,6 +820,29 @@ func print(L *State) int {
 	return 0
 }
 
+func printone(L *State) int {
+
+	if L.stdout == nil {
+		return 0
+	}
+
+	var argcount = L.GetTop()
+	L.GetGlobal("tostring")
+	for i := 1; i <= argcount; i++ {
+		L.PushValue(-1)
+		L.PushValue(i)
+		L.call(1, 1)
+		var s = L.ToString(-1)
+		if i > 1 {
+			L.stdout.Write([]byte("\t"))
+		}
+		L.stdout.Write([]byte(s))
+		L.Pop(1)
+	}
+	L.stdout.Write([]byte("\n"))
+	return 0
+}
+
 func (L *State) GetStdout() io.Writer {
 	return L.stdout
 }
