@@ -670,6 +670,12 @@ func (L *State) OpenTable() {
 // Calls luaopen_os
 func (L *State) OpenOS() {
 	C.clua_openos(L.s)
+	L.GetGlobal("os")
+	if L.IsTable(-1) {
+		L.PushString("exit")
+		L.PushNil()
+		L.SetTable(-3)
+	}
 }
 
 // Calls luaopen_debug
