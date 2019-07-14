@@ -103,7 +103,7 @@ func GetVal(L *lua.State, idx int) (interface{}, error) {
 		return L.ToBoolean(idx), nil
 	}
 	var r interface{}
-	var err = luar.LuaToGo(L, idx, &r)
+	var err = LuaToGo(L, idx, &r)
 	return r, err
 }
 
