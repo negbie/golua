@@ -795,7 +795,7 @@ func (L *State) NewError(msg string) *LuaError {
 	return &LuaError{0, msg, L.StackTrace()}
 }
 
-func (L *State) Dump() error {
+func (L *State) DumpEx() error {
 	var rcode = int(C.clua_dump(L.s))
 	if rcode == 0 {
 		return nil

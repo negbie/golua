@@ -171,10 +171,10 @@ int dump_chunk (lua_State *L) {
 	luaL_checktype(L, -1, LUA_TFUNCTION);
 	lua_settop(L, -1);
 	luaL_buffinit(L,&b);
-	int errno;
-	errno = lua_dump(L, writer, &b);
-	if (errno != 0){
-	return luaL_error(L, "unable to dump given function, errno:%d", errno);
+	int errnum;
+	errnum = lua_dump(L, writer, &b, 0);
+	if (errnum != 0){
+	    return luaL_error(L, "unable to dump given function, errnum:%d", errnum);
 	}
 	luaL_pushresult(&b);
 	return 0;
@@ -196,14 +196,14 @@ static const char * reader (lua_State *L, void *ud, size_t *sz) {
 }
 
 // load function chunk dumped from dump_chunk
-int load_chunk(lua_State *L, char *b, int size, const char* chunk_name) {
+int load_chunk(lua_State *L, char *b, int size, const char* chunk_name, const char * mode) {
 	chunk ck;
 	ck.buffer = b;
 	ck.size = size;
-	int errno;
-	errno = lua_load(L, reader, &ck, chunk_name);
-	if (errno != 0) {
-		return luaL_error(L, "unable to load chunk, errno: %d", errno);
+	int errnum;
+	errnum = lua_load(L, reader, &ck, chunk_name, mode);
+	if (errnum != 0) {
+		return luaL_error(L, "unable to load chunk, errnum: %d", errnum);
 	}
 	return 0;
 }
