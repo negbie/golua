@@ -306,6 +306,25 @@ func (L *State) GetMetaTable(index int) bool {
 // lua_gettable
 func (L *State) GetTable(index int) { C.lua_gettable(L.s, C.int(index)) }
 
+func (L *State) GetTableByName(table string, createIfNil bool) (exist bool, err error) {
+	L.GetGlobal(table)
+	if L.IsNil(-1) {
+		L.Pop(1)
+		if createIfNil {
+			L.NewTable()
+			L.SetGlobal(table)
+			L.GetGlobal(table)
+			return true, nil
+		} else {
+			return false, nil
+		}
+	}
+	if L.IsTable(-1) {
+		return false, fmt.Errorf("is not a table : " + table)
+	}
+	return true, nil
+}
+
 // lua_gettop
 func (L *State) GetTop() int { return int(C.lua_gettop(L.s)) }
 
@@ -484,6 +503,36 @@ func (L *State) RawSeti(index int, n int) {
 func (L *State) Register(name string, f LuaGoFunction) {
 	L.PushGoFunction(f)
 	L.SetGlobal(name)
+}
+
+func (L *State) TableRegister(table string, name string, f LuaGoFunction) error {
+	if f == nil {
+		return fmt.Errorf("no function is set")
+	}
+	var _, err = L.GetTableByName(table, true)
+	if err != nil {
+		return err
+	}
+	L.PushGoFunction(f)
+	L.SetField(-2, name)
+	L.Pop(1)
+	return nil
+}
+
+func (L *State) TableRegisters(table string, funcs map[string]LuaGoFunction) error {
+	if funcs == nil {
+		return fmt.Errorf("no function is set")
+	}
+	var _, err = L.GetTableByName(table, true)
+	if err != nil {
+		return err
+	}
+	for funcname, f := range funcs {
+		L.PushGoFunction(f)
+		L.SetField(-2, funcname)
+	}
+	L.Pop(1)
+	return nil
 }
 
 // lua_remove
