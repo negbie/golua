@@ -386,7 +386,7 @@ func (L *State) IsUserdata(index int) bool { return C.lua_isuserdata(L.s, C.int(
 
 // lua_lessthan
 func (L *State) LessThan(index1, index2 int) bool {
-	return C.lua_lessthan(L.s, C.int(index1), C.int(index2)) == 1
+	return C.lua_compare(L.s, C.int(index1), C.int(index2), C.LUA_OPLT) == 1
 }
 
 // Creates a new lua interpreter state with the given allocation function
@@ -559,11 +559,6 @@ func (L *State) SetAllocf(f Alloc) {
 	C.clua_setallocf(L.s, unsafe.Pointer(&f))
 }
 
-// lua_setfenv
-func (L *State) SetfEnv(index int) {
-	C.lua_setfenv(L.s, C.int(index))
-}
-
 // lua_setfield
 func (L *State) SetField(index int, k string) {
 	Ck := C.CString(k)
@@ -575,7 +570,6 @@ func (L *State) SetField(index int, k string) {
 func (L *State) SetGlobal(name string) {
 	Cname := C.CString(name)
 	defer C.free(unsafe.Pointer(Cname))
-	// C.lua_setfield(L.s, C.int(LUA_GLOBALSINDEX), Cname)
 	C.lua_setglobal(L.s, Cname)
 }
 
@@ -643,12 +637,12 @@ func (L *State) ToBytes(index int) []byte {
 
 // lua_tointeger
 func (L *State) ToInteger(index int) int {
-	return int(C.lua_tointeger(L.s, C.int(index)))
+	return int(C.lua_tointegerx(L.s, C.int(index), nil))
 }
 
 // lua_tonumber
 func (L *State) ToNumber(index int) float64 {
-	return float64(C.lua_tonumber(L.s, C.int(index)))
+	return float64(C.lua_tonumberx(L.s, C.int(index), nil))
 }
 
 // lua_topointer
@@ -684,7 +678,7 @@ func XMove(from *State, to *State, n int) {
 
 // lua_yield
 func (L *State) Yield(nresults int) int {
-	return int(C.lua_yield(L.s, C.int(nresults)))
+	return int(C.lua_yieldk(L.s, C.int(nresults), 0, nil))
 }
 
 // Restricted library opens
