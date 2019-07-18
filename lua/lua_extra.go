@@ -29,6 +29,11 @@ func (L *State) TableSetValue(tableIndex int, key string, val interface{}) (err 
 		return
 	}
 
+	if bytes, ok := val.([]byte); ok {
+		L.PushBytes(bytes)
+		return
+	}
+
 	var vref = reflect.ValueOf(val)
 	var kind = vref.Kind()
 	switch kind {
@@ -79,4 +84,77 @@ func (L *State) TableRegisters(table string, funcs map[string]interface{}) error
 	}
 	L.Pop(1)
 	return err
+}
+
+func (L *State) TableGetString(tableIndex int, key string, def string) (string, error) {
+	L.GetField(tableIndex, key)
+	defer L.Pop(1)
+
+	if L.IsNil(-1) {
+		return def, fmt.Errorf("nil value")
+	}
+	if !L.IsString(-1) {
+		return def, fmt.Errorf("is not string")
+	}
+	var result = L.ToString(-1)
+	return result, nil
+}
+
+func (L *State) TableGetInteger(tableIndex int, key string, def int) (int, error) {
+	L.GetField(tableIndex, key)
+	defer L.Pop(1)
+
+	if L.IsNil(-1) {
+		return def, fmt.Errorf("nil value")
+	}
+	if !L.IsNumber(-1) {
+		return def, fmt.Errorf("is not string")
+	}
+	var result = L.ToInteger(-1)
+	return result, nil
+}
+
+func (L *State) TableGetNumber(tableIndex int, key string, def float64) (float64, error) {
+	L.GetField(tableIndex, key)
+	defer L.Pop(1)
+
+	if L.IsNil(-1) {
+		return def, fmt.Errorf("nil value")
+	}
+	if !L.IsNumber(-1) {
+		return def, fmt.Errorf("is not string")
+	}
+	var result = L.ToNumber(-1)
+	return result, nil
+}
+
+func (L *State) TableGetBoolean(tableIndex int, key string, def bool) (bool, error) {
+	L.GetField(tableIndex, key)
+	defer L.Pop(1)
+
+	if L.IsNil(-1) {
+		return def, fmt.Errorf("nil value")
+	}
+	if !L.IsBoolean(-1) {
+		return def, fmt.Errorf("is not string")
+	}
+	var result = L.ToBoolean(-1)
+	return result, nil
+}
+
+func (L *State) TableGetAndRef(tableIndex int, key string, judgement func(L *State, tableIndex int, key string) error) (int, error) {
+	L.GetField(tableIndex, key)
+	defer L.Pop(1)
+
+	if L.IsNil(-1) {
+		return -1, fmt.Errorf("nil value")
+	}
+	if judgement != nil {
+		var err = judgement(L, tableIndex, key)
+		if err != nil {
+			return -1, err
+		}
+	}
+	var result = L.Ref(LUA_REGISTRYINDEX)
+	return result, nil
 }
