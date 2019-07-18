@@ -199,7 +199,7 @@ func (L *State) pcall(nargs, nresults, errfunc int) int {
 	return int(C.lua_pcallk(L.s, C.int(nargs), C.int(nresults), C.int(errfunc), 0, nil))
 }
 
-func (L *State) callEx(nargs, nresults int, catch bool, errHandler LuaGoErrHandler) (err error) {
+func (L *State) pcallex(nargs, nresults int, catch bool, errHandler LuaGoErrHandler) (err error) {
 
 	if catch {
 
@@ -241,12 +241,12 @@ func (L *State) Call(nargs, nresults int) (err error) {
 }
 
 func (L *State) CallHandle(nargs, nresults int, errHandler LuaGoErrHandler) (err error) {
-	return L.callEx(nargs, nresults, true, errHandler)
+	return L.pcallex(nargs, nresults, true, errHandler)
 }
 
 // Like lua_call but panics on errors
 func (L *State) MustCall(nargs, nresults int) {
-	L.callEx(nargs, nresults, false, nil)
+	L.pcallex(nargs, nresults, false, nil)
 }
 
 // lua_checkstack
@@ -503,36 +503,6 @@ func (L *State) RawSeti(index int, n int) {
 func (L *State) Register(name string, f LuaGoFunction) {
 	L.PushGoFunction(f)
 	L.SetGlobal(name)
-}
-
-func (L *State) TableRegister(table string, name string, f LuaGoFunction) error {
-	if f == nil {
-		return fmt.Errorf("no function is set")
-	}
-	var _, err = L.GetTableByName(table, true)
-	if err != nil {
-		return err
-	}
-	L.PushGoFunction(f)
-	L.SetField(-2, name)
-	L.Pop(1)
-	return nil
-}
-
-func (L *State) TableRegisters(table string, funcs map[string]LuaGoFunction) error {
-	if funcs == nil {
-		return fmt.Errorf("no function is set")
-	}
-	var _, err = L.GetTableByName(table, true)
-	if err != nil {
-		return err
-	}
-	for funcname, f := range funcs {
-		L.PushGoFunction(f)
-		L.SetField(-2, funcname)
-	}
-	L.Pop(1)
-	return nil
 }
 
 // lua_remove
