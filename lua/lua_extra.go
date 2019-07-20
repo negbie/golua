@@ -216,3 +216,7 @@ func (L *State) TableGetAndRef(tableIndex int, key string, judgement func(L *Sta
 	var result = L.Ref(LUA_REGISTRYINDEX)
 	return result, nil
 }
+
+func (L *State) String() string {
+	return fmt.Sprintf("[%v -> %v]", L.Name, L.Path)
+}

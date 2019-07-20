@@ -256,6 +256,21 @@ func (L *State) CheckStack(extra int) bool {
 
 // lua_close
 func (L *State) Close() {
+
+	if L.closeHandlers != nil {
+		for _, closeHandler := range L.closeHandlers {
+			func() {
+				defer func() {
+					var pan = recover()
+					if pan != nil && L.stdout != nil {
+						_, _ = fmt.Fprintf(L.stdout, "lua invoke close handler error %v : %v", L.String(), pan)
+					}
+				}()
+				closeHandler(L)
+			}()
+		}
+	}
+
 	C.lua_close(L.s)
 	unregisterGoState(L)
 	if L.closeStdout && L.stdout != nil {

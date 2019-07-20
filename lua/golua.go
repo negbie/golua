@@ -31,6 +31,9 @@ type State struct {
 	s *C.lua_State
 
 	// index of this object inside the goStates array
+	Name string
+	Path string
+
 	Index uintptr
 
 	// Registry of go object that have been pushed to Lua VM
