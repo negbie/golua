@@ -39,9 +39,10 @@ type State struct {
 	// Freelist for funcs indices, to allow for freeing
 	freeIndices []uint
 
-	ErrHandler LuaGoErrHandler
-
 	mutex sync.RWMutex
+
+	ErrHandler    LuaGoErrHandler
+	closeHandlers []LuaGoFunction
 
 	data map[string]interface{}
 

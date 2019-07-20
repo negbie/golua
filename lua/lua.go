@@ -261,7 +261,7 @@ func (L *State) Close() {
 	if L.closeStdout && L.stdout != nil {
 		var closer, ok = L.stdout.(io.Closer)
 		if ok {
-			closer.Close()
+			_ = closer.Close()
 		}
 	}
 }
@@ -305,25 +305,6 @@ func (L *State) GetMetaTable(index int) bool {
 
 // lua_gettable
 func (L *State) GetTable(index int) { C.lua_gettable(L.s, C.int(index)) }
-
-func (L *State) GetTableByName(table string, createIfNil bool) (exist bool, err error) {
-	L.GetGlobal(table)
-	if L.IsNil(-1) {
-		L.Pop(1)
-		if createIfNil {
-			L.NewTable()
-			L.SetGlobal(table)
-			L.GetGlobal(table)
-			return true, nil
-		} else {
-			return false, nil
-		}
-	}
-	if L.IsTable(-1) {
-		return false, fmt.Errorf("is not a table : " + table)
-	}
-	return true, nil
-}
 
 // lua_gettop
 func (L *State) GetTop() int { return int(C.lua_gettop(L.s)) }

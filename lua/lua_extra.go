@@ -6,6 +6,54 @@ import (
 	"reflect"
 )
 
+/* =========================== life cycle ============================= */
+
+func (L *State) AddCloseHandler(callback LuaGoFunction) {
+	L.mutex.Lock()
+	defer L.mutex.Unlock()
+	if L.closeHandlers == nil {
+		L.closeHandlers = []LuaGoFunction{callback}
+	} else {
+		L.closeHandlers = append(L.closeHandlers, callback)
+	}
+}
+
+func AddCloseHandlerDefault(L *State) int {
+	if !L.IsFunction(-1) {
+		L.PushString("invalid argument, close callback must be a function")
+		return 1
+	}
+	var callbackRef = L.Ref(LUA_REGISTRYINDEX)
+	L.AddCloseHandler(func(L *State) int {
+		L.RawGeti(LUA_REGISTRYINDEX, callbackRef)
+		_ = L.CallHandle(0, 0, nil)
+		return 0
+	})
+	L.PushNil()
+	return 1
+}
+
+/* =========================== table ============================= */
+
+func (L *State) GetTableByName(table string, createIfNil bool) (exist bool, err error) {
+	L.GetGlobal(table)
+	if L.IsNil(-1) {
+		L.Pop(1)
+		if createIfNil {
+			L.NewTable()
+			L.SetGlobal(table)
+			L.GetGlobal(table)
+			return true, nil
+		} else {
+			return false, nil
+		}
+	}
+	if L.IsTable(-1) {
+		return false, fmt.Errorf("is not a table : " + table)
+	}
+	return true, nil
+}
+
 func (L *State) TableSetValue(tableIndex int, key string, val interface{}) (err error) {
 
 	defer func() {
@@ -13,13 +61,12 @@ func (L *State) TableSetValue(tableIndex int, key string, val interface{}) (err 
 			L.SetField(tableIndex, key)
 		}
 	}()
-
 	if val == nil {
 		L.PushNil()
 		return
 	}
 
-	if gofunc, ok := val.(LuaGoFunction); ok {
+	if gofunc, ok := val.(func(*State) int); ok {
 		L.PushGoFunction(gofunc)
 		return
 	}
@@ -47,6 +94,12 @@ func (L *State) TableSetValue(tableIndex int, key string, val interface{}) (err 
 	case reflect.Bool:
 		var b = val.(bool)
 		L.PushBoolean(b)
+	case reflect.Func:
+		// TODO
+		L.PushGoFunction(func(L *State) int {
+			vref.Call(nil)
+			return 0
+		})
 	case reflect.Map:
 		err = fmt.Errorf("map not support")
 	case reflect.Ptr, reflect.Chan, reflect.Array, reflect.Slice:
@@ -59,6 +112,11 @@ func (L *State) TableSetValue(tableIndex int, key string, val interface{}) (err 
 }
 
 func (L *State) TableRegister(table string, name string, val interface{}) error {
+
+	if len(table) == 0 {
+		table = "_G"
+	}
+
 	var _, err = L.GetTableByName(table, true)
 	if err != nil {
 		return err
