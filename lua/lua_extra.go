@@ -144,12 +144,16 @@ func (L *State) TableRegisters(table string, funcs map[string]interface{}) error
 	return err
 }
 
-func (L *State) TableGetString(tableIndex int, key string, def string) (string, error) {
+func (L *State) TableGetString(tableIndex int, key string, def string, throwNil bool) (string, error) {
 	L.GetField(tableIndex, key)
 	defer L.Pop(1)
 
 	if L.IsNil(-1) {
-		return def, fmt.Errorf("nil value")
+		if throwNil {
+			return def, fmt.Errorf("nil value")
+		} else {
+			return def, nil
+		}
 	}
 	if !L.IsString(-1) {
 		return def, fmt.Errorf("is not string")
@@ -158,13 +162,18 @@ func (L *State) TableGetString(tableIndex int, key string, def string) (string, 
 	return result, nil
 }
 
-func (L *State) TableGetInteger(tableIndex int, key string, def int) (int, error) {
+func (L *State) TableGetInteger(tableIndex int, key string, def int, throwNil bool) (int, error) {
 	L.GetField(tableIndex, key)
 	defer L.Pop(1)
 
 	if L.IsNil(-1) {
-		return def, fmt.Errorf("nil value")
+		if throwNil {
+			return def, fmt.Errorf("nil value")
+		} else {
+			return def, nil
+		}
 	}
+
 	if !L.IsNumber(-1) {
 		return def, fmt.Errorf("is not string")
 	}
@@ -172,12 +181,16 @@ func (L *State) TableGetInteger(tableIndex int, key string, def int) (int, error
 	return result, nil
 }
 
-func (L *State) TableGetNumber(tableIndex int, key string, def float64) (float64, error) {
+func (L *State) TableGetNumber(tableIndex int, key string, def float64, throwNil bool) (float64, error) {
 	L.GetField(tableIndex, key)
 	defer L.Pop(1)
 
 	if L.IsNil(-1) {
-		return def, fmt.Errorf("nil value")
+		if throwNil {
+			return def, fmt.Errorf("nil value")
+		} else {
+			return def, nil
+		}
 	}
 	if !L.IsNumber(-1) {
 		return def, fmt.Errorf("is not string")
@@ -186,12 +199,16 @@ func (L *State) TableGetNumber(tableIndex int, key string, def float64) (float64
 	return result, nil
 }
 
-func (L *State) TableGetBoolean(tableIndex int, key string, def bool) (bool, error) {
+func (L *State) TableGetBoolean(tableIndex int, key string, def bool, throwNil bool) (bool, error) {
 	L.GetField(tableIndex, key)
 	defer L.Pop(1)
 
 	if L.IsNil(-1) {
-		return def, fmt.Errorf("nil value")
+		if throwNil {
+			return def, fmt.Errorf("nil value")
+		} else {
+			return def, nil
+		}
 	}
 	if !L.IsBoolean(-1) {
 		return def, fmt.Errorf("is not string")
@@ -200,12 +217,43 @@ func (L *State) TableGetBoolean(tableIndex int, key string, def bool) (bool, err
 	return result, nil
 }
 
-func (L *State) TableGetAndRef(tableIndex int, key string, judgement func(L *State, tableIndex int, key string) error) (int, error) {
+func (L *State) TableGetValue(tableIndex int, key string, def interface{}, throwNil bool) (interface{}, error) {
 	L.GetField(tableIndex, key)
 	defer L.Pop(1)
 
 	if L.IsNil(-1) {
-		return -1, fmt.Errorf("nil value")
+		if throwNil {
+			return def, fmt.Errorf("nil value")
+		} else {
+			return def, nil
+		}
+	}
+
+	if L.IsString(-1) {
+		return L.ToString(-1), nil
+	}
+
+	if L.IsNumber(-1) {
+		return L.ToNumber(-1), nil
+	}
+
+	if L.IsBoolean(-1) {
+		return L.ToBoolean(-1), nil
+	}
+
+	return nil, fmt.Errorf("unsupport type : %v", L.Typename(-1))
+}
+
+func (L *State) TableGetAndRef(tableIndex int, key string, throwNil bool, judgement func(L *State, tableIndex int, key string) error) (int, error) {
+	L.GetField(tableIndex, key)
+	defer L.Pop(1)
+
+	if L.IsNil(-1) {
+		if throwNil {
+			return -1, fmt.Errorf("nil value")
+		} else {
+			return -1, nil
+		}
 	}
 	if judgement != nil {
 		var err = judgement(L, tableIndex, key)
