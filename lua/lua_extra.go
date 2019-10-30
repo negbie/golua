@@ -265,6 +265,68 @@ func (L *State) TableGetAndRef(tableIndex int, key string, throwNil bool, judgem
 	return result, nil
 }
 
+/* ================== go life cycle ref keeping ==================== */
+
+func (L *State) KeepGoRef(obj interface{}) int {
+	L.gorefmutex.Lock()
+	if L.gorefs == nil {
+		L.gorefs = make([]interface{}, 16)
+	}
+
+	var id = L.gorefptr
+	L.gorefptr = L.gorefptr + 1
+	if L.gorefptr >= len(L.gorefs) {
+		var nova = make([]interface{}, len(L.gorefs)+8)
+		copy(nova, L.gorefs)
+		L.gorefs = nova
+	}
+	L.gorefmutex.Unlock()
+	return id
+}
+
+func (L *State) GetGoRef(ref int) interface{} {
+	if L.gorefs == nil {
+		return nil
+	}
+	L.gorefmutex.RLock()
+	defer L.gorefmutex.RUnlock()
+	if ref >= len(L.gorefs) || ref < 0 {
+		return nil
+	}
+	return L.gorefs[ref]
+}
+
+func (L *State) ClearGoRef() {
+	if L.gorefs == nil {
+		return
+	}
+	L.gorefmutex.Lock()
+	for i := 0; i < len(L.gorefs); i++ {
+		L.gorefs[i] = nil
+	}
+	L.gorefmutex.Unlock()
+}
+
+/* ================== extra data ==================== */
+
+func (L *State) GetData(key string) interface{} {
+	if L.data == nil {
+		return nil
+	}
+	L.mutex.RLock()
+	defer L.mutex.RUnlock()
+	return L.data[key]
+}
+
+func (L *State) SetData(key string, val interface{}) {
+	L.mutex.Lock()
+	defer L.mutex.Unlock()
+	if L.data == nil {
+		L.data = make(map[string]interface{})
+	}
+	L.data[key] = val
+}
+
 func (L *State) String() string {
 	return fmt.Sprintf("[%v -> %v]", L.Name, L.Path)
 }
