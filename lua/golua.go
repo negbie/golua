@@ -11,6 +11,7 @@ import "C"
 
 import (
 	"io"
+	"log"
 	"reflect"
 	"sync"
 	"unsafe"
@@ -95,12 +96,20 @@ func getGoState(gostateindex uintptr) *State {
 
 //export golua_callgofunction
 func golua_callgofunction(gostateindex uintptr, fid uint) int {
+	var ret int
+	defer func() {
+		var pan = recover()
+		if pan != nil {
+			log.Printf("%v", pan)
+		}
+	}()
 	L1 := getGoState(gostateindex)
 	if fid < 0 {
 		panic(&LuaError{0, "Requested execution of an unknown function", L1.StackTrace()})
 	}
 	f := L1.registry[fid].(LuaGoFunction)
-	return f(L1)
+	ret = f(L1)
+	return ret
 }
 
 var typeOfBytes = reflect.TypeOf([]byte(nil))
