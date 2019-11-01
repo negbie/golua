@@ -10,8 +10,8 @@ package lua
 import "C"
 
 import (
+	"fmt"
 	"io"
-	"log"
 	"reflect"
 	"sync"
 	"unsafe"
@@ -95,18 +95,32 @@ func getGoState(gostateindex uintptr) *State {
 }
 
 //export golua_callgofunction
-func golua_callgofunction(gostateindex uintptr, fid uint) int {
-	var ret int
+func golua_callgofunction(gostateindex uintptr, fid uint) (ret int) {
+
+	L1 := getGoState(gostateindex)
+	if fid < 0 {
+		L1.PushString("Requested execution of an unknown function")
+		return 1
+	}
+
 	defer func() {
 		var pan = recover()
 		if pan != nil {
-			log.Printf("%v", pan)
+			var errstr string
+			var err, ok = pan.(error)
+			if ok {
+				errstr = err.Error()
+			} else {
+				errstr = fmt.Sprintf("%v", pan)
+			}
+
+			L1.GetGlobal("error")
+			L1.PushString(errstr)
+			_ = L1.Call(1, 0)
+			ret = 0
 		}
 	}()
-	L1 := getGoState(gostateindex)
-	if fid < 0 {
-		panic(&LuaError{0, "Requested execution of an unknown function", L1.StackTrace()})
-	}
+
 	f := L1.registry[fid].(LuaGoFunction)
 	ret = f(L1)
 	return ret

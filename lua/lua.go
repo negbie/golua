@@ -27,13 +27,6 @@ import (
 
 import "fmt"
 
-type LuaStackEntry struct {
-	Name        string
-	Source      string
-	ShortSource string
-	CurrentLine int
-}
-
 func newState(L *C.lua_State) *State {
 	newstate := &State{
 		s:                 L,

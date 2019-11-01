@@ -10,24 +10,6 @@ import (
 	"unsafe"
 )
 
-type LuaError struct {
-	code       int
-	message    string
-	stackTrace []LuaStackEntry
-}
-
-func (err *LuaError) Error() string {
-	return err.message
-}
-
-func (err *LuaError) Code() int {
-	return err.code
-}
-
-func (err *LuaError) StackTrace() []LuaStackEntry {
-	return err.stackTrace
-}
-
 // luaL_argcheck
 // WARNING: before b30b2c62c6712c6683a9d22ff0abfa54c8267863 the function ArgCheck had the opposite behaviour
 func (L *State) Argcheck(cond bool, narg int, extramsg string) {
