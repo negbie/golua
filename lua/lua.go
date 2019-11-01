@@ -650,6 +650,8 @@ func (L *State) OpenBase() {
 	L.SetGlobal("printex")
 	L.PushGoFunction(pcall)
 	L.SetGlobal("pcall")
+	L.PushGoFunction(xpcall)
+	L.SetGlobal("xpcall")
 
 }
 
