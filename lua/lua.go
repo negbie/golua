@@ -648,6 +648,9 @@ func (L *State) OpenBase() {
 	L.SetGlobal("print")
 	L.PushGoFunction(printex)
 	L.SetGlobal("printex")
+	L.PushGoFunction(pcall)
+	L.SetGlobal("pcall")
+
 }
 
 // Calls luaopen_io
