@@ -238,8 +238,8 @@ func (L *State) CallHandle(nargs, nresults int, errHandler LuaGoErrHandler) (err
 }
 
 // Like lua_call but panics on errors
-func (L *State) MustCall(nargs, nresults int) {
-	L.pcallex(nargs, nresults, false, nil)
+func (L *State) MustCall(nargs, nresults int) error {
+	return L.pcallex(nargs, nresults, false, nil)
 }
 
 // lua_checkstack

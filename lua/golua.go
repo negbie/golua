@@ -12,6 +12,7 @@ import "C"
 import (
 	"fmt"
 	"io"
+	"log"
 	"reflect"
 	"sync"
 	"unsafe"
@@ -113,10 +114,12 @@ func golua_callgofunction(gostateindex uintptr, fid uint) (ret int) {
 			} else {
 				errstr = fmt.Sprintf("%v", pan)
 			}
-
 			L1.GetGlobal("error")
 			L1.PushString(errstr)
-			_ = L1.Call(1, 0)
+			var mcerr = L1.MustCall(1, 0)
+			if mcerr != nil {
+				log.Printf(mcerr.Error())
+			}
 			ret = 0
 		}
 	}()
