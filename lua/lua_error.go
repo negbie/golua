@@ -43,14 +43,37 @@ func (err *LuaError) StackTraceToString(prefix string, suffix string) string {
 		var source = stack.ShortSource
 		var funcname = stack.Name
 		var linenum = stack.CurrentLine
-		if linenum >= 0 {
+		if linenum >= 0 || len(funcname) > 0 {
 			var lines = strings.Split(stack.Source, "\n")
-			if linenum < len(lines) {
+			if linenum >= 0 && linenum < len(lines) {
 				source = lines[linenum-1]
 			}
+			var one = fmt.Sprintf("%s%s %s %d\n%s", prefix, source, funcname, linenum, suffix)
+			str = str + one
 		}
-		var one = fmt.Sprintf("%s%s %s %d\n%s", prefix, source, funcname, linenum, suffix)
-		str = str + one
 	}
 	return str
+}
+
+func (err *LuaError) StackTraceToError(prefix string, suffix string) error {
+	var str = err.StackTraceToString(prefix, suffix)
+	if len(str) == 0 {
+		return nil
+	}
+	return fmt.Errorf("%v\n\n%v", err.Error(), str)
+}
+
+func LuaErrorTrans(pan interface{}, prefix string, suffix string) error {
+	if pan == nil {
+		return nil
+	}
+	lerr, ok := pan.(*LuaError)
+	if ok {
+		return lerr.StackTraceToError(prefix, suffix)
+	}
+	err, ok := pan.(error)
+	if ok {
+		return err
+	}
+	return fmt.Errorf("%v", pan)
 }
