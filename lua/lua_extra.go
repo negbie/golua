@@ -384,9 +384,9 @@ func (L *State) StackToString() string {
 	var info = ""
 	var top = L.GetTop()
 	for i := top; i >= 1; i-- {
-		var luaType = L.Typename(i)
+		var luaTypeName = L.TypeString(i)
 		var luaValue = L.ToInterface(i, false)
-		info = fmt.Sprintf("%v[%d] %v | %v\n", info, i, luaType, luaValue)
+		info = fmt.Sprintf("%v[%d] %v | %v\n", info, i, luaTypeName, luaValue)
 	}
 	return info
 }

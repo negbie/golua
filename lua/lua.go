@@ -630,6 +630,33 @@ func (L *State) Typename(tp int) string {
 	return C.GoString(C.lua_typename(L.s, C.int(tp)))
 }
 
+func (L *State) TypeString(idx int) string {
+	var luaType = L.Type(idx)
+	switch luaType {
+	case LUA_TNIL:
+		return "nil"
+	case LUA_TNONE:
+		return "none"
+	case LUA_TSTRING:
+		return "string"
+	case LUA_TNUMBER:
+		return "number"
+	case LUA_TBOOLEAN:
+		return "boolean"
+	case LUA_TTABLE:
+		return "table"
+	case LUA_TFUNCTION:
+		return "function"
+	case LUA_TTHREAD:
+		return "thread"
+	case LUA_TUSERDATA:
+		return "userdata"
+	case LUA_TLIGHTUSERDATA:
+		return "lightuserdata"
+	}
+	return fmt.Sprintf("unknown %v", luaType)
+}
+
 // lua_xmove
 func XMove(from *State, to *State, n int) {
 	C.lua_xmove(from.s, to.s, C.int(n))

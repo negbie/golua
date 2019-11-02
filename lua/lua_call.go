@@ -1,5 +1,7 @@
 package lua
 
+import "log"
+
 func pcall(L *State) int {
 	var top = L.GetTop()
 	if top == 0 {
@@ -67,6 +69,7 @@ func xpcall(L *State) int {
 		} else {
 			L.PushString(trans.Error())
 		}
+		log.Printf(L.StackToString())
 		err = L.Call(1, LUA_MULTRET)
 		if err == nil {
 			L.PushBoolean(false)
@@ -80,6 +83,7 @@ func xpcall(L *State) int {
 				L.PushString(trans.Error())
 			}
 		}
+		log.Printf(L.StackToString())
 		return L.GetTop()
 	}
 
