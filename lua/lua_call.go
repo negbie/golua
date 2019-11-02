@@ -59,14 +59,28 @@ func xpcall(L *State) int {
 	// insert error handler to bottom
 	L.Insert(1)
 
-	var callerr = L.Call(top-2, LUA_MULTRET)
-	if callerr != nil {
-		callerr = LuaErrorTrans(callerr, "\t", "")
-		if callerr != nil {
-			L.PushString(callerr.Error())
-			return 1
+	var err = L.Call(top-2, LUA_MULTRET)
+	if err != nil {
+		var trans = LuaErrorTrans(err, "\t", "")
+		if trans == nil {
+			L.PushString(err.Error())
+		} else {
+			L.PushString(trans.Error())
 		}
-		return 0
+		err = L.Call(1, LUA_MULTRET)
+		if err == nil {
+			L.PushBoolean(false)
+			L.Insert(1)
+		} else {
+			L.PushBoolean(false)
+			trans = LuaErrorTrans(err, "\t", "")
+			if trans == nil {
+				L.PushString(err.Error())
+			} else {
+				L.PushString(trans.Error())
+			}
+		}
+		return L.GetTop()
 	}
 
 	L.PushBoolean(true)

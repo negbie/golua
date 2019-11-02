@@ -330,3 +330,63 @@ func (L *State) SetData(key string, val interface{}) {
 func (L *State) String() string {
 	return fmt.Sprintf("[%v -> %v]", L.Name, L.Path)
 }
+
+/* ==================== info ============================= */
+
+func (L *State) ToInterface(idx int, retptr bool) interface{} {
+	var luaType = L.Type(idx)
+	switch luaType {
+	case LUA_TNIL:
+		return nil
+	case LUA_TNUMBER:
+		return L.ToNumber(idx)
+	case LUA_TBOOLEAN:
+		return L.ToBoolean(idx)
+	case LUA_TSTRING:
+		return L.ToString(idx)
+	case LUA_TTABLE:
+		if retptr {
+			return nil
+		} else {
+			return "[table]"
+		}
+	case LUA_TFUNCTION:
+		if retptr {
+			return L.ToGoFunction(idx)
+		} else {
+			return "[function]"
+		}
+	case LUA_TUSERDATA:
+		if retptr {
+			return L.ToUserdata(idx)
+		} else {
+			return "[userdata]"
+		}
+	case LUA_TTHREAD:
+		if retptr {
+			return L.ToThread(idx)
+		} else {
+			return "[thread]"
+		}
+	case LUA_TLIGHTUSERDATA:
+		if retptr {
+			return nil
+		} else {
+			return "[lightuserdata]"
+		}
+	case LUA_TNONE:
+		return nil
+	}
+	return nil
+}
+
+func (L *State) StackToString() string {
+	var info = ""
+	var top = L.GetTop()
+	for i := top; i >= 1; i-- {
+		var luaType = L.Typename(i)
+		var luaValue = L.ToInterface(i, false)
+		info = fmt.Sprintf("%v[%d] %v | %v\n", info, i, luaType, luaValue)
+	}
+	return info
+}
