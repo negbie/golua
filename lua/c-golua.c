@@ -417,7 +417,7 @@ void clua_openbase(lua_State* L)
 	lua_pushcfunction(L,&luaopen_base);
 	lua_pushstring(L,"");
 	lua_call(L, 1, 0);
-	clua_hide_pcall(L);
+//	clua_hide_pcall(L);
 
     /*
 	lua_getglobal(L, "print");
