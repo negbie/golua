@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/camsiabor/golua/lua"
+	"github.com/negbie/golua/lua"
 )
 
 // ConvError records a conversion error from value 'From' to value 'To'.

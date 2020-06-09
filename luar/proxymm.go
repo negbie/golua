@@ -14,7 +14,7 @@ import (
 	"math/cmplx"
 	"reflect"
 
-	"github.com/camsiabor/golua/lua"
+	"github.com/negbie/golua/lua"
 )
 
 func channel__index(L *lua.State) int {

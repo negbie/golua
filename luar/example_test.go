@@ -11,8 +11,8 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/camsiabor/golua/lua"
-	"github.com/stevedonovan/luar"
+	"github.com/negbie/golua/lua"
+	"github.com/negbie/golua/luar"
 )
 
 func Example() {
@@ -434,50 +434,4 @@ return {
 	// Output:
 	// bar 18
 	// foo 17
-}
-
-func ExampleRegister_sandbox() {
-	const code = `
-print("foo")
-print(io ~= nil)
-print(os == nil)
-`
-
-	L := luar.Init()
-	defer L.Close()
-
-	res := L.LoadString(code)
-	if res != 0 {
-		msg := L.ToString(-1)
-		fmt.Println("could not compile", msg)
-	}
-
-	// Create a empty sandbox.
-	L.NewTable()
-	// "*" means "use table on top of the stack."
-	luar.Register(L, "*", luar.Map{
-		"print": fmt.Println,
-	})
-	env := luar.NewLuaObject(L, -1)
-	G := luar.NewLuaObjectFromName(L, "_G")
-	defer env.Close()
-	defer G.Close()
-
-	// We can copy any Lua object from "G" to env with 'Set', e.g.:
-	//   env.Set("print", G.Get("print"))
-	// A more convenient and efficient way is to do a bulk copy with 'Setv':
-	env.Setv(G, "type", "io", "table")
-
-	// Set up sandbox.
-	L.SetfEnv(-2)
-
-	// Run 'code' chunk.
-	err := L.Call(0, 0)
-	if err != nil {
-		log.Fatal(err)
-	}
-	// Output:
-	// foo
-	// true
-	// true
 }

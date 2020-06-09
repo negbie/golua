@@ -2,10 +2,11 @@ package luar
 
 import (
 	"fmt"
-	"github.com/camsiabor/golua/lua"
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	"github.com/negbie/golua/lua"
 )
 
 const LUA_PATH = "LUA_PATH"

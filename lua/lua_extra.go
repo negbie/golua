@@ -2,7 +2,6 @@ package lua
 
 import (
 	"fmt"
-	"github.com/camsiabor/qcom/util"
 	"reflect"
 )
 
@@ -86,10 +85,10 @@ func (L *State) TableSetValue(tableIndex int, key string, val interface{}) (err 
 	switch kind {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
 		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		var n = util.AsInt64(val, 0)
+		var n = AsInt64(val, 0)
 		L.PushInteger(n)
 	case reflect.Float32, reflect.Float64:
-		var n = util.AsFloat64(val, 0)
+		var n = AsFloat64(val, 0)
 		L.PushNumber(n)
 	case reflect.Bool:
 		var b = val.(bool)
